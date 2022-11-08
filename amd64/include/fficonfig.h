@@ -4,12 +4,7 @@
 /* Define if building universal (internal helper macro) */
 /* #undef AC_APPLE_UNIVERSAL_BUILD */
 
-/* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
-   systems. This function is required for `alloca.c' support on those systems.
-   */
-/* #undef CRAY_STACKSEG_END */
-
-/* Define to 1 if using `alloca.c'. */
+/* Define to 1 if using 'alloca.c'. */
 /* #undef C_ALLOCA */
 
 /* Define to the flags needed for the .section .eh_frame directive. */
@@ -18,10 +13,14 @@
 /* Define this if you want extra debugging. */
 /* #undef FFI_DEBUG */
 
+/* Define this if you want statically defined trampolines */
+/* #undef FFI_EXEC_STATIC_TRAMP */
+
 /* Cannot use PROT_EXEC on this target, so, we revert to alternative means */
 /* #undef FFI_EXEC_TRAMPOLINE_TABLE */
 
-/* Define this if you want to enable pax emulated trampolines */
+/* Define this if you want to enable pax emulated trampolines (experimental)
+   */
 /* #undef FFI_MMAP_EXEC_EMUTRAMP_PAX */
 
 /* Cannot use malloc on this target, so, we revert to alternative means */
@@ -33,11 +32,10 @@
 /* Define this if you do not want support for aggregate types. */
 /* #undef FFI_NO_STRUCTS */
 
-/* Define to 1 if you have `alloca', as a function or macro. */
+/* Define to 1 if you have 'alloca', as a function or macro. */
 #define HAVE_ALLOCA 1
 
-/* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix).
-   */
+/* Define to 1 if <alloca.h> works. */
 /* #undef HAVE_ALLOCA_H */
 
 /* Define if your assembler supports .cfi_* directives. */
@@ -77,11 +75,14 @@
 /* Define to 1 if you have the `memcpy' function. */
 /* #undef HAVE_MEMCPY */
 
-/* Define to 1 if you have the <memory.h> header file. */
-#define HAVE_MEMORY_H 1
+/* Define to 1 if you have the `memfd_create' function. */
+/* #undef HAVE_MEMFD_CREATE */
 
 /* Define to 1 if you have the `mkostemp' function. */
 /* #undef HAVE_MKOSTEMP */
+
+/* Define to 1 if you have the `mkstemp' function. */
+/* #undef HAVE_MKSTEMP */
 
 /* Define to 1 if you have the `mmap' function. */
 /* #undef HAVE_MMAP */
@@ -95,11 +96,17 @@
 /* Define if read-only mmap of a plain file works. */
 /* #undef HAVE_MMAP_FILE */
 
+/* Define if your compiler supports pointer authentication. */
+/* #undef HAVE_PTRAUTH */
+
 /* Define if .eh_frame sections should be read-only. */
 /* #undef HAVE_RO_EH_FRAME */
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HAVE_STDINT_H 1
+
+/* Define to 1 if you have the <stdio.h> header file. */
+#define HAVE_STDIO_H 1
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #define HAVE_STDLIB_H 1
@@ -109,6 +116,9 @@
 
 /* Define to 1 if you have the <string.h> header file. */
 #define HAVE_STRING_H 1
+
+/* Define to 1 if you have the <sys/memfd.h> header file. */
+/* #undef HAVE_SYS_MEMFD_H */
 
 /* Define to 1 if you have the <sys/mman.h> header file. */
 /* #undef HAVE_SYS_MMAN_H */
@@ -138,7 +148,7 @@
 #define PACKAGE_NAME "libffi"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "libffi 3.3-rc0"
+#define PACKAGE_STRING "libffi 3.4.3"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "libffi"
@@ -147,7 +157,7 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "3.3-rc0"
+#define PACKAGE_VERSION "3.4.3"
 
 /* The size of `double', as computed by sizeof. */
 #define SIZEOF_DOUBLE 8
@@ -156,7 +166,7 @@
 #define SIZEOF_LONG_DOUBLE 8
 
 /* The size of `size_t', as computed by sizeof. */
-#define SIZEOF_SIZE_T 8
+#define SIZEOF_SIZE_T 4
 
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
@@ -166,18 +176,20 @@
 	STACK_DIRECTION = 0 => direction of growth unknown */
 /* #undef STACK_DIRECTION */
 
-/* Define to 1 if you have the ANSI C header files. */
+/* Define to 1 if all of the C90 standard headers exist (not just the ones
+   required in a freestanding environment). This macro is provided for
+   backward compatibility; new code need not use it. */
 #define STDC_HEADERS 1
 
 /* Define if symbols are underscored. */
-/* #undef SYMBOL_UNDERSCORE */
+#define SYMBOL_UNDERSCORE 1
 
 /* Define this if you are using Purify and want to suppress spurious messages.
    */
 /* #undef USING_PURIFY */
 
 /* Version number of package */
-#define VERSION "3.3-rc0"
+#define VERSION "3.4.3"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
