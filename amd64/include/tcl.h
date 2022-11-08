@@ -17,6 +17,8 @@
 #ifndef _TCL
 #define _TCL
 
+#define STATIC_BUILD
+
 /*
  * For C++ compilers, use extern "C"
  */
