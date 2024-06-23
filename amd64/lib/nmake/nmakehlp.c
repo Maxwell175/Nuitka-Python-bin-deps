@@ -4,8 +4,8 @@
  *
  *	This is used to fix limitations within nmake and the environment.
  *
- * Copyright (c) 2002 by David Gravereaux.
- * Copyright (c) 2006 by Pat Thoyts
+ * Copyright (c) 2002 David Gravereaux.
+ * Copyright (c) 2006 Pat Thoyts
  *
  * See the file "license.terms" for information on usage and redistribution of
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
@@ -14,10 +14,11 @@
 
 #define _CRT_SECURE_NO_DEPRECATE
 #include <windows.h>
+#ifdef _MSC_VER
 #pragma comment (lib, "user32.lib")
 #pragma comment (lib, "kernel32.lib")
+#endif
 #include <stdio.h>
-#include <math.h>
 
 /*
  * This library is required for x64 builds with _some_ versions of MSVC
@@ -29,7 +30,7 @@
 #endif
 
 /* ISO hack for dumb VC++ */
-#ifdef _MSC_VER
+#if defined(_WIN32) && defined(_MSC_VER) && _MSC_VER < 1900
 #define   snprintf	_snprintf
 #endif
 
@@ -37,7 +38,7 @@
 /* protos */
 
 static int CheckForCompilerFeature(const char *option);
-static int CheckForLinkerFeature(const char **options, int count);
+static int CheckForLinkerFeature(char **options, int count);
 static int IsIn(const char *string, const char *substring);
 static int SubstituteFile(const char *substs, const char *filename);
 static int QualifyPath(const char *path);
@@ -54,8 +55,8 @@ typedef struct {
     char buffer[STATICBUFFERSIZE];
 } pipeinfo;
 
-pipeinfo Out = {INVALID_HANDLE_VALUE, '\0'};
-pipeinfo Err = {INVALID_HANDLE_VALUE, '\0'};
+pipeinfo Out = {INVALID_HANDLE_VALUE, ""};
+pipeinfo Err = {INVALID_HANDLE_VALUE, ""};
 
 /*
  * exitcodes: 0 == no, 1 == yes, 2 == error
@@ -205,25 +206,25 @@ CheckForCompilerFeature(
 
     hProcess = GetCurrentProcess();
 
-    ZeroMemory(&pi, sizeof(PROCESS_INFORMATION));
-    ZeroMemory(&si, sizeof(STARTUPINFO));
+    memset(&pi, 0, sizeof(PROCESS_INFORMATION));
+    memset(&si, 0, sizeof(STARTUPINFO));
     si.cb = sizeof(STARTUPINFO);
     si.dwFlags   = STARTF_USESTDHANDLES;
     si.hStdInput = INVALID_HANDLE_VALUE;
 
-    ZeroMemory(&sa, sizeof(SECURITY_ATTRIBUTES));
+    memset(&sa, 0, sizeof(SECURITY_ATTRIBUTES));
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = NULL;
     sa.bInheritHandle = FALSE;
 
     /*
-     * Create a non-inheritible pipe.
+     * Create a non-inheritable pipe.
      */
 
     CreatePipe(&Out.pipe, &h, &sa, 0);
 
     /*
-     * Dupe the write side, make it inheritible, and close the original.
+     * Dupe the write side, make it inheritable, and close the original.
      */
 
     DuplicateHandle(hProcess, h, hProcess, &si.hStdOutput, 0, TRUE,
@@ -270,10 +271,10 @@ CheckForCompilerFeature(
     if (!ok) {
 	DWORD err = GetLastError();
 	int chars = snprintf(msg, sizeof(msg) - 1,
-		"Tried to launch: \"%s\", but got error [%u]: ", cmdline, err);
+		"Tried to launch: \"%s\", but got error [%lu]: ", cmdline, err);
 
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS|
-		FORMAT_MESSAGE_MAX_WIDTH_MASK, 0L, err, 0, (LPVOID)&msg[chars],
+		FORMAT_MESSAGE_MAX_WIDTH_MASK, 0L, err, 0, (LPSTR)&msg[chars],
 		(300-chars), 0);
 	WriteFile(GetStdHandle(STD_ERROR_HANDLE), msg, lstrlen(msg), &err,NULL);
 	return 2;
@@ -326,7 +327,7 @@ CheckForCompilerFeature(
 
 static int
 CheckForLinkerFeature(
-    const char **options,
+    char **options,
     int count)
 {
     STARTUPINFO si;
@@ -341,13 +342,13 @@ CheckForLinkerFeature(
 
     hProcess = GetCurrentProcess();
 
-    ZeroMemory(&pi, sizeof(PROCESS_INFORMATION));
-    ZeroMemory(&si, sizeof(STARTUPINFO));
+    memset(&pi, 0, sizeof(PROCESS_INFORMATION));
+    memset(&si, 0, sizeof(STARTUPINFO));
     si.cb = sizeof(STARTUPINFO);
     si.dwFlags   = STARTF_USESTDHANDLES;
     si.hStdInput = INVALID_HANDLE_VALUE;
 
-    ZeroMemory(&sa, sizeof(SECURITY_ATTRIBUTES));
+    memset(&sa, 0, sizeof(SECURITY_ATTRIBUTES));
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = NULL;
     sa.bInheritHandle = TRUE;
@@ -359,7 +360,7 @@ CheckForLinkerFeature(
     CreatePipe(&Out.pipe, &h, &sa, 0);
 
     /*
-     * Dupe the write side, make it inheritible, and close the original.
+     * Dupe the write side, make it inheritable, and close the original.
      */
 
     DuplicateHandle(hProcess, h, hProcess, &si.hStdOutput, 0, TRUE,
@@ -404,10 +405,10 @@ CheckForLinkerFeature(
     if (!ok) {
 	DWORD err = GetLastError();
 	int chars = snprintf(msg, sizeof(msg) - 1,
-		"Tried to launch: \"%s\", but got error [%u]: ", cmdline, err);
+		"Tried to launch: \"%s\", but got error [%lu]: ", cmdline, err);
 
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS|
-		FORMAT_MESSAGE_MAX_WIDTH_MASK, 0L, err, 0, (LPVOID)&msg[chars],
+		FORMAT_MESSAGE_MAX_WIDTH_MASK, 0L, err, 0, (LPSTR)&msg[chars],
 		(300-chars), 0);
 	WriteFile(GetStdHandle(STD_ERROR_HANDLE), msg, lstrlen(msg), &err,NULL);
 	return 2;
@@ -503,7 +504,6 @@ GetVersionFromFile(
     const char *match,
     int numdots)
 {
-    size_t cbBuffer = 100;
     static char szBuffer[100];
     char *szResult = NULL;
     FILE *fp = fopen(filename, "rt");
@@ -513,7 +513,7 @@ GetVersionFromFile(
 	 * Read data until we see our match string.
 	 */
 
-	while (fgets(szBuffer, cbBuffer, fp) != NULL) {
+	while (fgets(szBuffer, sizeof(szBuffer), fp) != NULL) {
 	    LPSTR p, q;
 
 	    p = strstr(szBuffer, match);
@@ -523,7 +523,7 @@ GetVersionFromFile(
 		 */
 
 		p += strlen(match);
-		while (*p && !isdigit(*p)) {
+		while (*p && !isdigit((unsigned char)*p)) {
 		    ++p;
 		}
 
@@ -532,14 +532,13 @@ GetVersionFromFile(
 		 */
 
 		q = p;
-		while (*q && (strchr("0123456789.ab", *q)) && ((!strchr(".ab", *q)
-			    && (!strchr("ab", q[-1])) || --numdots))) {
+		while (*q && (strchr("0123456789.ab", *q)) && (((!strchr(".ab", *q)
+			    && !strchr("ab", q[-1])) || --numdots))) {
 		    ++q;
 		}
 
-		memcpy(szBuffer, p, q - p);
-		szBuffer[q-p] = 0;
-		szResult = szBuffer;
+		*q = 0;
+		szResult = p;
 		break;
 	    }
 	}
@@ -562,7 +561,7 @@ typedef struct list_item_t {
 static list_item_t *
 list_insert(list_item_t **listPtrPtr, const char *key, const char *value)
 {
-    list_item_t *itemPtr = malloc(sizeof(list_item_t));
+    list_item_t *itemPtr = (list_item_t *)malloc(sizeof(list_item_t));
     if (itemPtr) {
 	itemPtr->key = strdup(key);
 	itemPtr->value = strdup(value);
@@ -593,7 +592,7 @@ list_free(list_item_t **listPtrPtr)
  * SubstituteFile --
  *	As windows doesn't provide anything useful like sed and it's unreliable
  *	to use the tclsh you are building against (consider x-platform builds -
- *	eg compiling AMD64 target from IX86) we provide a simple substitution
+ *	e.g. compiling AMD64 target from IX86) we provide a simple substitution
  *	option here to handle autoconf style substitutions.
  *	The substitution file is whitespace and line delimited. The file should
  *	consist of lines matching the regular expression:
@@ -611,9 +610,7 @@ SubstituteFile(
     const char *substitutions,
     const char *filename)
 {
-    size_t cbBuffer = 1024;
     static char szBuffer[1024], szCopy[1024];
-    char *szResult = NULL;
     list_item_t *substPtr = NULL;
     FILE *fp, *sp;
 
@@ -621,12 +618,12 @@ SubstituteFile(
     if (fp != NULL) {
 
 	/*
-	 * Build a list of substutitions from the first filename
+	 * Build a list of substitutions from the first filename
 	 */
 
 	sp = fopen(substitutions, "rt");
 	if (sp != NULL) {
-	    while (fgets(szBuffer, cbBuffer, sp) != NULL) {
+	    while (fgets(szBuffer, sizeof(szBuffer), sp) != NULL) {
 		unsigned char *ks, *ke, *vs, *ve;
 		ks = (unsigned char*)szBuffer;
 		while (ks && *ks && isspace(*ks)) ++ks;
@@ -657,7 +654,7 @@ SubstituteFile(
 	 * Run the substitutions over each line of the input
 	 */
 
-	while (fgets(szBuffer, cbBuffer, fp) != NULL) {
+	while (fgets(szBuffer, sizeof(szBuffer), fp) != NULL) {
 	    list_item_t *p = NULL;
 	    for (p = substPtr; p != NULL; p = p->nextPtr) {
 		char *m = strstr(szBuffer, p->key);
@@ -674,7 +671,7 @@ SubstituteFile(
 		    memcpy(szBuffer, szCopy, sizeof(szCopy));
 		}
 	    }
-	    printf(szBuffer);
+	    printf("%s", szBuffer);
 	}
 
 	list_free(&substPtr);
@@ -708,7 +705,7 @@ QualifyPath(
 {
     char szCwd[MAX_PATH + 1];
 
-	GetFullPathName(szPath, sizeof(szCwd)-1, szCwd, NULL);
+    GetFullPathName(szPath, sizeof(szCwd)-1, szCwd, NULL);
     printf("%s\n", szCwd);
     return 0;
 }
@@ -725,14 +722,17 @@ static int LocateDependencyHelper(const char *dir, const char *keypath)
 {
     HANDLE hSearch;
     char path[MAX_PATH+1];
-    int dirlen, keylen, ret;
+    size_t dirlen;
+    int keylen, ret;
     WIN32_FIND_DATA finfo;
 
-    if (dir == NULL || keypath == NULL)
+    if (dir == NULL || keypath == NULL) {
 	return 2; /* Have no real error reporting mechanism into nmake */
+    }
     dirlen = strlen(dir);
-    if ((dirlen + 3) > sizeof(path))
+    if (dirlen > sizeof(path) - 3) {
 	return 2;
+    }
     strncpy(path, dir, dirlen);
     strncpy(path+dirlen, "\\*", 3);	/* Including terminating \0 */
     keylen = strlen(keypath);
@@ -792,13 +792,15 @@ static int LocateDependencyHelper(const char *dir, const char *keypath)
  */
 static int LocateDependency(const char *keypath)
 {
-    int i, ret;
+    size_t i;
+    int ret;
     static const char *paths[] = {"..", "..\\..", "..\\..\\.."};
 
     for (i = 0; i < (sizeof(paths)/sizeof(paths[0])); ++i) {
 	ret = LocateDependencyHelper(paths[i], keypath);
-	if (ret == 0)
+	if (ret == 0) {
 	    return ret;
+	}
     }
     return ret;
 }
